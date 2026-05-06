@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 15px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 6px;
+      margin-top: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 14px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #555;
+    }
+
+    select {
+      padding: 10px 12px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    button.submit {
+      margin-top: 20px;
+      padding: 12px 28px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button.submit:hover { opacity: 0.85; }
+    button.submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .result {
+      margin-top: 32px;
+      padding: 24px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .result.visible { display: block; }
+
+    .score {
+      font-size: 48px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .score-label { color: #888; font-size: 13px; margin-bottom: 24px; }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+
+    .tag-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .tag {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .tag.strength { background: #0d2b1a; color: #4ade80; border: 1px solid #166534; }
+    .tag.gap { background: #2b0d0d; color: #f87171; border: 1px solid #991b1b; }
+
+    .summary {
+      margin-top: 20px;
+      padding: 14px;
+      background: #111;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #aaa;
+      line-height: 1.6;
+    }
+
+    .cover-letter-body {
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #ccc;
+    }
+
+    .subject-line {
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #333;
+    }
+
+    .loading {
+      display: none;
+      color: #888;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .loading.visible { display: block; }
+
+    .dot-pulse::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Assistant</h1>
+    <p class="subtitle">AI-powered resume analysis and cover letter generation</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('analyze')">Analyze Resume</button>
+      <button class="tab" onclick="switchTab('cover')">Cover Letter</button>
+    </div>
+
+    <!-- Analyze Panel -->
+    <div class="panel active" id="panel-analyze">
+      <label>Your Resume</label>
+      <textarea id="analyze-resume" rows="8" placeholder="Paste your resume here..."></textarea>
+
+      <label>Job Description</label>
+      <textarea id="analyze-jd" rows="8" placeholder="Paste the job description here..."></textarea>
+
+      <button class="submit" onclick="analyze()">Analyze</button>
+      <div class="loading" id="analyze-loading">Analyzing<span class="dot-pulse"></span></div>
+
+      <div class="result" id="analyze-result">
+        <div class="score" id="score">--</div>
+        <div class="score-label">Match Score</div>
+
+        <div class="section-title">Strengths</div>
+        <div class="tag-list" id="strengths"></div>
+
+        <div class="section-title">Gaps</div>
+        <div class="tag-list" id="gaps"></div>
+
+        <div class="summary" id="summary"></div>
+      </div>
+    </div>
+
+    <!-- Cover Letter Panel -->
+    <div class="panel" id="panel-cover">
+      <label>Your Resume</label>
+      <textarea id="cover-resume" rows="8" placeholder="Paste your resume here..."></textarea>
+
+      <label>Job Description</label>
+      <textarea id="cover-jd" rows="8" placeholder="Paste the job description here..."></textarea>
+
+      <label>Tone</label>
+      <select id="tone">
+        <option value="professional">Professional</option>
+        <option value="confident">Confident</option>
+        <option value="casual">Casual</option>
+      </select>
+
+      <button class="submit" onclick="coverLetter()">Generate Cover Letter</button>
+      <div class="loading" id="cover-loading">Generating<span class="dot-pulse"></span></div>
+
+      <div class="result" id="cover-result">
+        <div class="subject-line" id="cover-subject"></div>
+        <div class="cover-letter-body" id="cover-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'analyze') || (i === 1 && tab === 'cover'));
+      });
+      document.getElementById('panel-analyze').classList.toggle('active', tab === 'analyze');
+      document.getElementById('panel-cover').classList.toggle('active', tab === 'cover');
+    }
+
+    async function analyze() {
+      const resume = document.getElementById('analyze-resume').value;
+      const jd = document.getElementById('analyze-jd').value;
+      if (!resume || !jd) return alert('Please fill in both fields');
+
+      const btn = document.querySelector('#panel-analyze .submit');
+      const loading = document.getElementById('analyze-loading');
+      const result = document.getElementById('analyze-result');
+
+      btn.disabled = true;
+      loading.classList.add('visible');
+      result.classList.remove('visible');
+
+      try {
+        const res = await fetch(`${BASE}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume, job_description: jd })
+        });
+        const data = await res.json();
+
+        document.getElementById('score').textContent = data.match_score;
+        document.getElementById('summary').textContent = data.summary;
+
+        document.getElementById('strengths').innerHTML = data.strengths
+          .map(s => `<div class="tag strength">${s}</div>`).join('');
+        document.getElementById('gaps').innerHTML = data.gaps
+          .map(g => `<div class="tag gap">${g}</div>`).join('');
+
+        result.classList.add('visible');
+      } catch(e) {
+        alert('Something went wrong. Try again.');
+      } finally {
+        btn.disabled = false;
+        loading.classList.remove('visible');
+      }
+    }
+
+    async function coverLetter() {
+      const resume = document.getElementById('cover-resume').value;
+      const jd = document.getElementById('cover-jd').value;
+      const tone = document.getElementById('tone').value;
+      if (!resume || !jd) return alert('Please fill in both fields');
+
+      const btn = document.querySelector('#panel-cover .submit');
+      const loading = document.getElementById('cover-loading');
+      const result = document.getElementById('cover-result');
+
+      btn.disabled = true;
+      loading.classList.add('visible');
+      result.classList.remove('visible');
+
+      try {
+        const res = await fetch(`${BASE}/cover-letter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume, job_description: jd, tone })
+        });
+        const data = await res.json();
+
+        document.getElementById('cover-subject').textContent = `Subject: ${data.subject}`;
+        document.getElementById('cover-body').textContent = data.body;
+
+        result.classList.add('visible');
+      } catch(e) {
+        alert('Something went wrong. Try again.');
+      } finally {
+        btn.disabled = false;
+        loading.classList.remove('visible');
+      }
+    }
+  </script>
+</body>
+</html>

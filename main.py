@@ -5,10 +5,17 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import SessionLocal, init_db, Application
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 load_dotenv()
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+@app.get("/")
+def root():
+    return FileResponse("static/index.html")
+
 client = Anthropic()
 
 init_db()
